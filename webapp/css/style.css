@@ -1,0 +1,80 @@
+/* Enter your custom styles here */
+.sapMPage{
+    background-color: #f9f9f9 !important;
+}
+
+.sapMPageHeader{
+    background-color: #304959 !important;
+}
+
+.sapMTitle{
+    width: 100% !important;
+    color: white !important;
+    font-size: 1.2rem;
+    margin-top: 10%;
+    margin-bottom: 10%;
+    text-align: flex-end;
+}
+
+.MarginlessPanel{
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    border-radius: 0;
+    border-bottom: gray 1px solid;
+}
+
+.HeaderPanelButton{
+    border: none !important;
+    color: #195FAB;
+}
+
+.TableSummaryText{
+    width: 500% !important;
+    margin-left: 5px;
+}
+
+.sapMTextMaxWidth{
+    max-width: none !important;
+}
+
+.sapMFlexItem{
+    width: 35%;
+    align-items: end;
+    font-size: larger;
+}
+
+.LabelTexts{
+    width: 100%;
+    border-bottom: grey 1px solid;
+}
+
+.Checkbox{
+    margin-left: 20%;
+}
+
+.BodyPanel .sapMPanelContent{
+    background-color: #f9f9f9 !important;
+}
+
+.MarginTopHBox{
+    margin-top: 20px;
+}
+
+.Heading1{
+    font-size: 1.5 rem;
+    font-weight: bold;
+}
+
+.sapMDialogTitle{
+    color: #131e29 !important;
+}
+
+.ListItem{
+    color: #131e29 !important;
+}
+
+/* Data Table View */
+.BackButton .sapMBtnInner{
+    background-color: #f9f9f9 !important;
+}

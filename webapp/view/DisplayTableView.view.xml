@@ -1,0 +1,46 @@
+<mvc:View controllerName="sfsalesdemoapp.controller.DataTable"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m">
+    <Page id="DataTablePage" title="{i18n>DataTablePagetitle}">
+        <headerContent>
+            <Button id="BackButton" icon="sap-icon://nav-back" press=".onNavBack" class="BackButton"></Button>
+        </headerContent>
+
+    <Panel id="SearchResultPanel">
+        <VBox id="VBox2">
+            <HBox id="HBoxSearchInTable">
+                <Text id="SearchInTableText" text="{i18n>searchintable}" class="LabelTexts"></Text>
+                <Input id="SearchInTableInputBox" enabled="false"></Input>
+                <Text id="SearchInTableBlankText" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBoxTableSummary">
+                <Text id="TableSummaryText" text="{i18n>tablesummary}" class="LabelTexts"></Text>
+                <Input id="TableSummaryInputBox" enabled="false"></Input>
+                <Text id="TableSummaryExtraText" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBoxNumberOfHits">
+                <Text id="NumberOfHitsText" text="{i18n>numberofhits}" class="LabelTexts"></Text>
+                <Input id="NumberOfHitsInputBox" enabled="false"></Input>
+                <Text id="NumberOfHitsExtraText" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBoxMaxNumHits">
+                <Text id="MaximumNumHitsText" text="{i18n>maxnohits}" class="LabelTexts"></Text>
+                <Input id="MaximumNumHitsInputBox" enabled="false"></Input>
+                <Text id="MaximumNumHitsExtraText" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBoxRunTime">
+                <Text id="RunTimeText" text="{i18n>runtime}" class="LabelTexts"></Text>
+                <Input id="RunTimeInputBox" enabled="false"></Input>
+                <Text id="RunTimeExtraText" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBoxExports">
+                <Button id="ExportCSVButton" icon="sap-icon://paper-plane" text="{i18n>exporttocsv}" press="onExportCSV"></Button>
+                <Button id="ExportExcellButton" icon="sap-icon://paper-plane" text="{i18n>exporttoexcell}" press="onExportExcel"></Button>
+            </HBox>
+        </VBox>
+    </Panel>
+
+    <Panel id="DataTablePanel" class="BodyPanel">
+    </Panel>
+    </Page>
+</mvc:View>

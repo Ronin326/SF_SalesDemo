@@ -1,0 +1,90 @@
+<mvc:View controllerName="sfsalesdemoapp.controller.MainView"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core">
+    <Page id="page" title="{i18n>title}">
+
+    <Panel id="HeaderPanel" class="MarginlessPanel">
+        <Button id="AcceptButton" icon="sap-icon://accept" class="HeaderPanelButton" tooltip="{i18n>acceptbutton}" press="LoadSelectedSave"></Button>
+        <ComboBox id="SavedComboBox" tooltip="{i18n>savedcombobox}"
+            items="{
+            path: 'SavedSearches>/SavedSearchesObjects'
+        }">
+
+            <items>
+                <core:Item id="_IDGenItem" class="ListItem"
+                    key="{SavedSearches>Name}"
+                    text="{SavedSearches>Name}" />
+            </items>
+        </ComboBox>
+        <Button id="SaveButton" class="HeaderPanelButton" icon="sap-icon://save" tooltip="{i18n>save}" press="SaveSearchDialog"></Button>
+        <Button id="ExecuteButton" class="HeaderPanelButton" icon="sap-icon://initiative" tooltip="{i18n>executetip}" text="{i18n>execute}" press="onGoToDisplayTable"></Button>
+        <Button id="NumberOfEntries" class="HeaderPanelButton" text="{i18n>numEntries}" tooltip="{i18n>numEntriestip}" press="showNumEntitiesDialog"></Button>
+        <Button id="SelectAllButton" class="HeaderPanelButton" icon="sap-icon://multiselect-all" tooltip="{i18n>selectall}" press="selectAll"></Button>
+        <Button id="DeselectAllButton" class="HeaderPanelButton" icon="sap-icon://multiselect-none" tooltip="{i18n>deselectall}" press="deselectAll"></Button>
+        <Button id="ClearAllEntriesButton" class="HeaderPanelButton" icon="sap-icon://sys-minus" text="{i18n>entries}" tooltip="{i18n>removeallentries}" press="ClearAllEntries"></Button>
+        <Button id="DecreasColumnSizeButton" class="HeaderPanelButton" icon="sap-icon://zoom-out" tooltip="{i18n>decreasecolsize}" press="onDecreaseWidthPress"></Button>
+        <Button id="IncreasColumnSizeButton" class="HeaderPanelButton" icon="sap-icon://zoom-in" tooltip="{i18n>increasecolsize}" press="onIncreaseWidthPress"></Button>
+    </Panel>
+
+    <Panel id="SelectTablePanel" class="BodyPanel">
+        <VBox id="VBox1">
+            <HBox id="HBox1">
+                <Text id="TableLabel" text="{i18n>tableLabel}" class="LabelTexts"></Text>
+                <Input id="TableSearchInputBox"></Input>
+                <Button id="SearchHelper" tooltip="{i18n>searchhelper}" icon="sap-icon://value-help" press=".onOpenTableSearchHelper"></Button>
+            </HBox>
+            <HBox id="HBox2">
+                <Text id="TextTableLabel" text="{i18n>texttablelabel}" class="LabelTexts"></Text>
+                <Input id="TextTableInputBox" enabled="true"></Input>
+                <Text id="TableSummary" class="TableSummaryText"></Text>
+            </HBox>
+            <HBox id="HBox4">
+                <Text id="MaxNoHitsLabel" text="{i18n>maxnohits}" class="LabelTexts"></Text>
+                <Input id="MaxNoHitsInputBox" value="100"></Input>
+                <Text id="EmptyText2"></Text>
+            </HBox>
+            <Text id="SelectionCriteriaText" text="{i18n>selectioncriteria}" class="Heading1"></Text>
+        </VBox>
+    </Panel>
+
+    <Panel id="AddChildrenTable">
+        
+    </Panel>
+
+    <Panel id="TablePanel" class="BodyPanel">
+        <Table id="FieldsTable" items="{fields>/fields}">
+            <columns>
+                <Column id="FldNameCol">
+                    <Text id="FldNameText" text="{i18n>fldname}"></Text>
+                </Column>
+                <Column id="Fr.ValueCol">
+                    <Text id="Fr.ValueText" text="{i18n>frvalue}"></Text>
+                </Column>
+                <Column id="ToValueCol">
+                    <Text id="ToValueText" text="{i18n>tovalue}"></Text>
+                </Column>
+                <Column id="OutputCol">
+                    <Text id="OutputText" text="{i18n>output}"></Text>
+                </Column>
+                <Column id="TechnicalNameCol">
+                    <Text id="TechnicalNameText" text="{i18n>technicalname}"></Text>
+                </Column>
+            </columns>
+
+            <items>
+                <ColumnListItem id="TableItems">
+                    <cells>
+                        <Text id="FieldNameText" text="{path: 'fields>fieldName', formatter: '.formatter.FieldNameFormatter'}"></Text>
+                        <Input id="FromValueInputBox"></Input>
+                        <Input id="ToValueInputBox"></Input>
+                        <CheckBox id="OutputCheckBox"></CheckBox>
+                        <Text id="TechnicalNameTextItem" text="{fields>fieldName}"></Text>
+                    </cells>
+                </ColumnListItem>
+            </items>
+        </Table>
+    </Panel>
+
+    </Page>
+</mvc:View>
