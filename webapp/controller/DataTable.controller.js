@@ -70,7 +70,7 @@ sap.ui.define([
             var aFilters = [];
             aColumnsConfig.forEach(function (element) {
                 if (element.Output) {
-                    var sField = element.FieldName;
+                    var sField = element.FieldName.replace(".", "/");
                     var sFrom = element.FromValue;
                     var sTo = element.ToValue;
 
@@ -89,9 +89,11 @@ sap.ui.define([
                 if (element.Output) {
                     oTable.addColumn(new sap.ui.table.Column({
                         label: new sap.ui.commons.Label({ text: element.FieldNameText }),
-                        template: new sap.ui.commons.TextView({ text: "{" + element.FieldName + "}" }),
-                        sortProperty: element.FieldName,
-                        filterProperty: element.FieldName
+                        template: new sap.ui.commons.TextView({ 
+                            text: "{" + element.FieldName.replace(/\./g, "/") + "}" 
+                        }),
+                        sortProperty: element.FieldName.replace(/\./g, "/"),
+                        filterProperty: element.FieldName.replace(/\./g, "/")
                     }));
                 }
             });
@@ -117,14 +119,38 @@ sap.ui.define([
                                     new sap.m.Column({ header: new sap.m.Label({ text: "Value" }) })
                                 ],
                                 items: Object.keys(oRowData)
-                                    .filter(function(key) { return key !== "__metadata" && !key.includes("Nav"); })
-                                    .map(function(key) {
-                                        return new sap.m.ColumnListItem({
-                                            cells: [
-                                                new sap.m.Text({ text: key }),
-                                                new sap.m.Text({ text: oRowData[key] })
-                                            ]
-                                        });
+                                    .filter(function(key) { return key !== "__metadata"; })
+                                    .map(function (key) {
+
+                                        var value = oRowData[key];
+                                        if (value === undefined || value === null) {
+                                            value = "";
+                                        }
+
+                                        // If value is object (navigation property)
+                                        if (value && typeof value === "object") {
+
+                                            return new sap.m.ColumnListItem({
+                                                cells: [
+                                                    new sap.m.Text({ text: key }),
+                                                    new sap.m.Button({
+                                                        text: "View",
+                                                        press: function () {
+                                                            showObjectDialog(key, value);
+                                                        }
+                                                    })
+                                                ]
+                                            });
+
+                                        } else {
+
+                                            return new sap.m.ColumnListItem({
+                                                cells: [
+                                                    new sap.m.Text({ text: key }),
+                                                    new sap.m.Text({ text: value })
+                                                ]
+                                            });
+                                        }
                                     })
                             }),
                             beginButton: new sap.m.Button({
@@ -140,6 +166,36 @@ sap.ui.define([
 
                         that.getView().addDependent(oDialog);
                         oDialog.open();
+
+                        function showObjectDialog(title, objectData) {
+
+                            var oNestedDialog = new sap.m.Dialog({
+                                title: title,
+                                contentWidth: "40%",
+                                contentHeight: "400px",
+                                resizable: true,
+                                draggable: true,
+                                content: new sap.m.ScrollContainer({
+                                    vertical: true,
+                                    content: new sap.m.TextArea({
+                                        width: "100%",
+                                        editable: false,
+                                        value: JSON.stringify(objectData, null, 2)
+                                    })
+                                }),
+                                beginButton: new sap.m.Button({
+                                    text: "Close",
+                                    press: function () {
+                                        oNestedDialog.close();
+                                    }
+                                }),
+                                afterClose: function () {
+                                    oNestedDialog.destroy();
+                                }
+                            });
+
+                            oNestedDialog.open();
+                        }
                     }
                 }),
                 width: "50px",
@@ -159,9 +215,22 @@ sap.ui.define([
             var sSelectedTable = this.getOwnerComponent().getModel("shared").getProperty("/SelectedTable");
             var oODataModel = this.getView().getModel();
 
+            var aExpand = this.getOwnerComponent()
+                .getModel("shared")
+                .getProperty("/SelectedChildTables");
+
+            var sExpand = aExpand.length ? aExpand.join(",") : undefined;
+
+            var mParams = {
+            };
+
+            if (sExpand != undefined) {
+                mParams["$expand"] = sExpand;
+            }
             // Step 1: Get total count
             oODataModel.read("/" + sSelectedTable + "/$count", {
                 filters: aFilters,
+                urlParameters: mParams,
                 success: function (oCount) {
                     var iTotalCount = parseInt(oCount, 10);
                     that.byId("NumberOfHitsInputBox").setValue(iTotalCount);
@@ -170,12 +239,17 @@ sap.ui.define([
                     var aAllData = [];
 
                     function loadBatch(iSkip) {
+                        var bParams = {
+                            "$top": Math.min(1000, iMaxHits),
+                            "$skip": iSkip
+                        };
+
+                        if (sExpand != undefined) {
+                            bParams["$expand"] = sExpand;
+                        }
                         oODataModel.read("/" + sSelectedTable, {
                             filters: aFilters,
-                            urlParameters: {
-                                "$top": Math.min(1000, iMaxHits),
-                                "$skip": iSkip
-                            },
+                            urlParameters: bParams,
                             success: function (oData) {
                                 aAllData = aAllData.concat(oData.results);
 
@@ -217,6 +291,7 @@ sap.ui.define([
 
                     // Start loading first batch
                     loadBatch(0);
+                    console.log(aAllData[0]); // should be an array
                 },
                 error: function (oError) {
                     console.error("Error loading count:", oError);

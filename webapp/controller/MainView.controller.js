@@ -336,6 +336,265 @@ sap.ui.define([
                     oRouter.navTo("RouteDisplayTable", {}, true /* replace */, {clearTarget: true});
                 }
             });
+        },
+        
+        showRelatedTablesDialog: function () {
+
+            var sSelectedTable = this.getOwnerComponent()
+                .getModel("shared")
+                .getProperty("/SelectedTable");
+
+            if (!sSelectedTable) {
+                sap.m.MessageToast.show("No table selected!");
+                return;
+            }
+
+            var oModel = this.getOwnerComponent().getModel();
+            var oMetaModel = oModel.getMetaModel();
+            var that = this;
+
+            oMetaModel.loaded().then(function () {
+
+                var sEntityTypeName = "SFOData." + sSelectedTable;
+                var oEntityType = oMetaModel.getODataEntityType(sEntityTypeName);
+
+                if (!oEntityType || !oEntityType.navigationProperty) {
+                    sap.m.MessageToast.show("No related tables found.");
+                    return;
+                }
+
+                var aSchemas = oMetaModel.getObject("/dataServices/schema");
+
+                var aNavProps = oEntityType.navigationProperty.map(function (nav) {
+
+                    var sTargetEntity = "";
+
+                    // relationship looks like: "SFOData.PerPersonal_local_ARE"
+                    var sAssociationName = nav.relationship.split(".")[1];
+
+                    aSchemas.forEach(function (schema) {
+                        if (schema.association) {
+                            schema.association.forEach(function (assoc) {
+                                if (assoc.name === sAssociationName) {
+
+                                    var oTargetEnd = assoc.end.find(function (end) {
+                                        return end.role === nav.toRole;
+                                    });
+
+                                    if (oTargetEnd) {
+                                        sTargetEntity = oTargetEnd.type.replace(schema.namespace + ".", "");
+                                    }
+                                }
+                            });
+                        }
+                    });
+
+                    return {
+                        name: nav.name,
+                        target: sTargetEntity
+                    };
+                });
+
+                var oNavModel = new sap.ui.model.json.JSONModel({
+                    relations: aNavProps
+                });
+
+                var oList = new sap.m.List({
+                    growing: true,
+                    mode: "SingleSelectMaster",
+                    selectionChange: function (oEvent) {
+                        var oItem = oEvent.getParameter("listItem");
+                        var oContext = oItem.getBindingContext();
+                        var oData = oContext.getObject();
+
+                        that._addTableButton(oData); // 🔥 call helper
+                    },
+                    items: {
+                        path: "/relations",
+                        template: new sap.m.StandardListItem({
+                            title: "{name}",
+                            description: "Target Table: {target}",
+                            icon: "sap-icon://table-view"
+                        })
+                    }
+                });
+
+                // 🔍 Search Field
+                var oSearch = new sap.m.SearchField({
+                    width: "100%",
+                    liveChange: function (oEvent) {
+
+                        var sQuery = oEvent.getParameter("newValue");
+                        var oBinding = oList.getBinding("items");
+
+                        if (sQuery) {
+                            var oFilter = new sap.ui.model.Filter([
+                                new sap.ui.model.Filter("name", sap.ui.model.FilterOperator.Contains, sQuery),
+                                new sap.ui.model.Filter("target", sap.ui.model.FilterOperator.Contains, sQuery)
+                            ], false);
+
+                            oBinding.filter(oFilter);
+                        } else {
+                            oBinding.filter([]);
+                        }
+                    }
+                });
+
+                var oDialog = new sap.m.Dialog({
+                    title: "Related Tables",
+                    contentWidth: "40%",
+                    contentHeight: "60%",
+                    content: [
+                        oSearch,
+                        oList
+                    ],
+                    beginButton: new sap.m.Button({
+                        text: "Close",
+                        press: function () {
+                            oDialog.close();
+                        }
+                    }),
+                    afterClose: function () {
+                        oDialog.destroy();
+                    }
+                });
+
+                oDialog.setModel(oNavModel);
+                that.getView().addDependent(oDialog);
+                oDialog.open();
+            });
+        },
+
+        _addTableButton: function (oData) {
+
+            var oHBox = this.byId("TablesHBox");
+            var oSharedModel = this.getOwnerComponent().getModel("shared");
+
+            // Prevent duplicates
+            var bExists = oHBox.getItems().some(function (oItem) {
+                return oItem.data("tableName") === oData.name;
+            });
+
+            if (bExists) {
+                sap.m.MessageToast.show("Table already selected");
+                return;
+            }
+
+            var oButton = new sap.m.Button({
+                text: oData.target,
+                icon: "sap-icon://decline",
+                iconFirst: false,
+                type: "Transparent",
+                tooltip: "Remove table",
+                press: function () {
+
+                    // 🔥 REMOVE from UI
+                    oHBox.removeItem(oButton);
+                    oButton.destroy();
+
+                    // 🔥 REMOVE from shared model
+                    var aChildren = oSharedModel.getProperty("/SelectedChildTables") || [];
+
+                    aChildren = aChildren.filter(function (name) {
+                        return name !== oData.name;
+                    });
+
+                    oSharedModel.setProperty("/SelectedChildTables", aChildren);
+                }
+            });
+
+            // store internal identifier
+            oButton.data("tableName", oData.name);
+
+            oHBox.addItem(oButton);
+
+            // 🔥 ADD to shared model
+            var aChildren = oSharedModel.getProperty("/SelectedChildTables") || [];
+            aChildren.push(oData.name);
+            oSharedModel.setProperty("/SelectedChildTables", aChildren);
+
+            // 🔥 Load fields
+            this._appendChildTableFields(oData.name);
+        },
+
+       _appendChildTableFields: function (sNavProperty) {
+
+            var oModel = this.getOwnerComponent().getModel();
+            var oMetaModel = oModel.getMetaModel();
+            var that = this;
+
+            var sParent = this.getOwnerComponent()
+                .getModel("shared")
+                .getProperty("/SelectedTable");
+
+            oMetaModel.loaded().then(function () {
+
+                var sParentEntityType = "SFOData." + sParent;
+                var oParentEntity = oMetaModel.getODataEntityType(sParentEntityType);
+
+                if (!oParentEntity || !oParentEntity.navigationProperty) {
+                    console.warn("Parent entity or navigation properties not found");
+                    return;
+                }
+
+                var oNav = oParentEntity.navigationProperty.find(function (n) {
+                    return n.name === sNavProperty;
+                });
+
+                if (!oNav) {
+                    console.warn("Navigation property not found:", sNavProperty);
+                    return;
+                }
+
+                // 🔥 Resolve association
+                var aSchemas = oMetaModel.getObject("/dataServices/schema");
+                var sAssociationName = oNav.relationship.split(".")[1];
+                var sTargetEntityType = null;
+
+                aSchemas.forEach(function (schema) {
+                    if (schema.association) {
+                        schema.association.forEach(function (assoc) {
+                            if (assoc.name === sAssociationName) {
+
+                                var oTargetEnd = assoc.end.find(function (end) {
+                                    return end.role === oNav.toRole;
+                                });
+
+                                if (oTargetEnd) {
+                                    sTargetEntityType = oTargetEnd.type;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                if (!sTargetEntityType) {
+                    console.warn("Target entity type not resolved");
+                    return;
+                }
+
+                var oTargetEntity = oMetaModel.getODataEntityType(sTargetEntityType);
+
+                if (!oTargetEntity) {
+                    console.warn("Target entity metadata not found");
+                    return;
+                }
+
+                // 🔥 Build child fields
+                var aNewFields = oTargetEntity.property.map(function (p) {
+                    return {
+                        fieldName: sNavProperty + "." + p.name,
+                        label: p["sap:label"] || p.name
+                    };
+                });
+
+                var oFieldModel = that.getView().getModel("fields");
+                var aExistingFields = oFieldModel.getProperty("/fields") || [];
+
+                var aCombined = aExistingFields.concat(aNewFields);
+
+                oFieldModel.setProperty("/fields", aCombined);
+            });
         }
     });
 });

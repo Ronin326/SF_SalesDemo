@@ -49,7 +49,8 @@
     </Panel>
 
     <Panel id="AddChildrenTable">
-        
+        <HBox id="TablesHBox"></HBox>
+        <Button id="AddChildTableButton" icon="sap-icon://add" text="{i18n>addchildtable}" press="showRelatedTablesDialog"></Button>
     </Panel>
 
     <Panel id="TablePanel" class="BodyPanel">

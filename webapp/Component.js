@@ -33,7 +33,8 @@ sap.ui.define([
                 SelectedTableID: "",
                 SavedTableData: [],
                 MaxNumHits: 0,
-                SelectedTableSummary: ""
+                SelectedTableSummary: "",
+                SelectedChildTables: []
             });
             this.setModel(oSharedModel, "shared");
 
