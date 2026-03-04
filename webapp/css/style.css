@@ -74,6 +74,10 @@
     color: #131e29 !important;
 }
 
+.outputCheckedRow {
+    background-color: #82b8ff57 !important;
+}
+
 /* Data Table View */
 .BackButton .sapMBtnInner{
     background-color: #f9f9f9 !important;

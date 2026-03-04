@@ -79,7 +79,7 @@
                         <Text id="FieldNameText" text="{path: 'fields>fieldName', formatter: '.formatter.FieldNameFormatter'}"></Text>
                         <Input id="FromValueInputBox"></Input>
                         <Input id="ToValueInputBox"></Input>
-                        <CheckBox id="OutputCheckBox"></CheckBox>
+                        <CheckBox id="OutputCheckBox" selected="{fields>isOutputChecked}" select=".onOutputCheckBoxSelect"></CheckBox>
                         <Text id="TechnicalNameTextItem" text="{fields>fieldName}"></Text>
                     </cells>
                 </ColumnListItem>

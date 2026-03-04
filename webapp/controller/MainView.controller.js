@@ -595,6 +595,52 @@ sap.ui.define([
 
                 oFieldModel.setProperty("/fields", aCombined);
             });
+        },
+
+        onOutputCheckBoxSelect: function(oEvent) {
+            var oCheckBox = oEvent.getSource();
+            var bSelected = oCheckBox.getSelected();
+            var oContext = oCheckBox.getBindingContext("fields");
+
+            // Update the model (if not using two-way binding)
+            oContext.getModel().setProperty("isOutputChecked", bSelected);
+
+            // Get the table row and add/remove custom style class
+            var oRow = oCheckBox.getParent(); // ColumnListItem
+            if (bSelected) {
+                oRow.addStyleClass("outputCheckedRow");
+            } else {
+                oRow.removeStyleClass("outputCheckedRow");
+            }
+
+            this.onOutputSelect(oCheckBox);
+        },
+
+        onOutputSelect: function(CheckBox) {
+            var oCheckBox = CheckBox;
+            var bSelected = oCheckBox.getSelected();
+
+            var oRow = oCheckBox.getParent(); // ColumnListItem
+            var oModel = this.getView().getModel("fields");
+            var aFields = oModel.getProperty("/fields");
+
+            // Get index of the row that changed
+            var sFieldName = oRow.getCells()[0].getText();
+            var iIndex = aFields.findIndex(function(f) { return f.fieldName === sFieldName; });
+
+            if(iIndex === -1) return;
+
+            var oChangedRow = aFields.splice(iIndex, 1)[0]; // remove from current position
+
+            if(bSelected) {
+                // move to top
+                aFields.unshift(oChangedRow);
+            } else {
+                // move back to original position (optional)
+                aFields.push(oChangedRow);
+            }
+
+            oModel.setProperty("/fields", aFields);
         }
     });
 });

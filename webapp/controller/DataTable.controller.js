@@ -119,7 +119,7 @@ sap.ui.define([
                                     new sap.m.Column({ header: new sap.m.Label({ text: "Value" }) })
                                 ],
                                 items: Object.keys(oRowData)
-                                    .filter(function(key) { return key !== "__metadata"; })
+                                    .filter(function(key) { return key !== "__metadata" && !key.includes("LocalNav"); })
                                     .map(function (key) {
 
                                         var value = oRowData[key];
@@ -128,29 +128,12 @@ sap.ui.define([
                                         }
 
                                         // If value is object (navigation property)
-                                        if (value && typeof value === "object") {
-
-                                            return new sap.m.ColumnListItem({
-                                                cells: [
-                                                    new sap.m.Text({ text: key }),
-                                                    new sap.m.Button({
-                                                        text: "View",
-                                                        press: function () {
-                                                            showObjectDialog(key, value);
-                                                        }
-                                                    })
-                                                ]
-                                            });
-
-                                        } else {
-
-                                            return new sap.m.ColumnListItem({
-                                                cells: [
-                                                    new sap.m.Text({ text: key }),
-                                                    new sap.m.Text({ text: value })
-                                                ]
-                                            });
-                                        }
+                                        return new sap.m.ColumnListItem({
+                                            cells: [
+                                                new sap.m.Text({ text: key }),
+                                                new sap.m.Text({ text: value })
+                                            ]
+                                        });
                                     })
                             }),
                             beginButton: new sap.m.Button({
