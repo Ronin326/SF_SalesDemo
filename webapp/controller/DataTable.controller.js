@@ -98,93 +98,6 @@ sap.ui.define([
                 }
             });
 
-            // Add "Details" column with button/icon
-            oTable.addColumn(new sap.ui.table.Column({
-                label: new sap.ui.commons.Label({ text: "" }),
-                template: new sap.m.Button({
-                    icon: "sap-icon://display-more",
-                    tooltip: "View More Detail",
-                    press: function (oEvent) {
-                        var oContext = oEvent.getSource().getBindingContext();
-                        var oRowData = oContext.getObject();
-
-                        // Create dialog dynamically
-                        var oDialog = new sap.m.Dialog({
-                            title: "Row Details",
-                            contentWidth: "50%",
-                            content: new sap.m.Table({
-                                width: "100%",
-                                columns: [
-                                    new sap.m.Column({ header: new sap.m.Label({ text: "Key" }) }),
-                                    new sap.m.Column({ header: new sap.m.Label({ text: "Value" }) })
-                                ],
-                                items: Object.keys(oRowData)
-                                    .filter(function(key) { return key !== "__metadata" && !key.includes("LocalNav"); })
-                                    .map(function (key) {
-
-                                        var value = oRowData[key];
-                                        if (value === undefined || value === null) {
-                                            value = "";
-                                        }
-
-                                        // If value is object (navigation property)
-                                        return new sap.m.ColumnListItem({
-                                            cells: [
-                                                new sap.m.Text({ text: key }),
-                                                new sap.m.Text({ text: value })
-                                            ]
-                                        });
-                                    })
-                            }),
-                            beginButton: new sap.m.Button({
-                                text: "Close",
-                                press: function () {
-                                    oDialog.close();
-                                }
-                            }),
-                            afterClose: function () {
-                                oDialog.destroy();
-                            }
-                        });
-
-                        that.getView().addDependent(oDialog);
-                        oDialog.open();
-
-                        function showObjectDialog(title, objectData) {
-
-                            var oNestedDialog = new sap.m.Dialog({
-                                title: title,
-                                contentWidth: "40%",
-                                contentHeight: "400px",
-                                resizable: true,
-                                draggable: true,
-                                content: new sap.m.ScrollContainer({
-                                    vertical: true,
-                                    content: new sap.m.TextArea({
-                                        width: "100%",
-                                        editable: false,
-                                        value: JSON.stringify(objectData, null, 2)
-                                    })
-                                }),
-                                beginButton: new sap.m.Button({
-                                    text: "Close",
-                                    press: function () {
-                                        oNestedDialog.close();
-                                    }
-                                }),
-                                afterClose: function () {
-                                    oNestedDialog.destroy();
-                                }
-                            });
-
-                            oNestedDialog.open();
-                        }
-                    }
-                }),
-                width: "50px",
-                hAlign: "Center"
-            }));
-
             // Panel busy + runtime start
             oPanel.setBusy(true);
             oPanel.setBusyIndicatorDelay(0);
@@ -210,6 +123,172 @@ sap.ui.define([
             if (sExpand != undefined) {
                 mParams["$expand"] = sExpand;
             }
+
+            // Add "Details" column with button/icon
+            oTable.addColumn(new sap.ui.table.Column({
+                label: new sap.ui.commons.Label({ text: "" }),
+                template: new sap.m.Button({
+                    icon: "sap-icon://display-more",
+                    tooltip: "View More Detail",
+                    press: function (oEvent) {
+                        var oContext = oEvent.getSource().getBindingContext();
+                        var oRowData = oContext.getObject();
+
+                        var aMainFields = [];
+                        var aNavSections = [];
+                        var aChildTables = [];
+
+                        Object.keys(oRowData).forEach(function (key) {
+                            var value = oRowData[key];
+                            
+                            if (key === "__metadata") return;
+
+                            // -----------------------------
+                            // CHILD TABLE NAVIGATION
+                            // -----------------------------
+                            if (value && value.results && Array.isArray(value.results)) {
+                                var oChildTable = new sap.m.Table({
+                                    headerText: key,
+                                    columns: []
+                                });
+
+                                if (value.results.length > 0) {
+                                    // Create columns dynamically
+                                    Object.keys(value.results[0]).forEach(function (childKey) {
+                                        if (childKey !== "__metadata" && typeof value.results[0][childKey] !== "object") {
+                                            oChildTable.addColumn(
+                                                new sap.m.Column({
+                                                    header: new sap.m.Label({ text: childKey })
+                                                })
+                                            );
+                                        }
+                                    });
+
+                                    // Create rows
+                                    value.results.forEach(function (row) {
+                                        var cells = [];
+                                        Object.keys(row).forEach(function (childKey) {
+                                            if (childKey !== "__metadata" && typeof row[childKey] !== "object") {
+                                                cells.push(new sap.m.Text({ text: row[childKey] || "" }));
+                                            }
+                                        });
+                                        oChildTable.addItem(
+                                            new sap.m.ColumnListItem({ cells: cells })
+                                        );
+                                    });
+                                }
+
+                                // Wrap each child table in an expandable panel
+                                aChildTables.push(
+                                    new sap.m.Panel({
+                                        headerText: key,
+                                        expandable: true,
+                                        expanded: false,
+                                        content: [oChildTable]
+                                    })
+                                );
+                            }
+
+                            // -----------------------------
+                            // NAVIGATION OBJECTS (single entity)
+                            // -----------------------------
+                            else if (value && typeof value === "object" && !value.__deferred && !Array.isArray(value) && !key.includes("Date")) {
+                                var aNavFields = [];
+                                Object.keys(value).forEach(function (childKey) {
+                                    if (childKey === "__metadata") return;
+
+                                    if (typeof value[childKey] !== "object") {
+                                        aNavFields.push(new sap.m.Label({ text: key + "." + childKey }));
+                                        aNavFields.push(new sap.m.Text({ text: value[childKey] || "" }));
+                                    }
+                                });
+
+                                if (aNavFields.length > 0) {
+                                    aNavSections.push(
+                                        new sap.m.Panel({
+                                            headerText: key + " Details",
+                                            expandable: true,
+                                            expanded: false,
+                                            content: [
+                                                new sap.ui.layout.form.SimpleForm({
+                                                    editable: false,
+                                                    layout: "ResponsiveGridLayout",
+                                                    columnsL: 2,
+                                                    columnsM: 2,
+                                                    content: aNavFields
+                                                })
+                                            ]
+                                        })
+                                    );
+                                }
+                            }
+                            
+                            else if (typeof value === "object" && key.includes("Date")) {
+                                aMainFields.push(new sap.m.Label({ text: key }));
+                                aMainFields.push(new sap.m.Text({ text: value || "" }));
+                            }
+
+                            // -----------------------------
+                            // NORMAL FIELDS
+                            // -----------------------------
+
+                            else if (typeof value !== "object") {
+                                aMainFields.push(new sap.m.Label({ text: key }));
+                                aMainFields.push(new sap.m.Text({ text: value || "" }));
+                            }
+                        });
+
+                        // -----------------------------
+                        // MAIN INFORMATION PANEL
+                        // -----------------------------
+                        var oMainForm = new sap.ui.layout.form.SimpleForm({
+                            editable: false,
+                            layout: "ResponsiveGridLayout",
+                            labelSpanL: 4,
+                            labelSpanM: 4,
+                            columnsL: 2,
+                            columnsM: 2,
+                            content: aMainFields
+                        });
+
+                        var aDialogContent = [
+                            new sap.m.Panel({
+                                headerText: "Main Information",
+                                expandable: true,
+                                expanded: true,
+                                content: [oMainForm]
+                            })
+                        ].concat(aNavSections) // navigation objects panels
+                        .concat(aChildTables); // child table panels
+
+                        // -----------------------------
+                        // DIALOG CREATION
+                        // -----------------------------
+                        var oDialog = new sap.m.Dialog({
+                            title: "Row Details",
+                            contentWidth: "70%",
+                            contentHeight: "75%",
+                            verticalScrolling: true,
+                            content: aDialogContent,
+                            beginButton: new sap.m.Button({
+                                text: "Close",
+                                press: function () {
+                                    oDialog.close();
+                                }
+                            }),
+                            afterClose: function () {
+                                oDialog.destroy();
+                            }
+                        });
+
+                        that.getView().addDependent(oDialog);
+                        oDialog.open();
+                    }
+                }),
+                width: "50px",
+                hAlign: "Center"
+            }));
+            
             // Step 1: Get total count
             oODataModel.read("/" + sSelectedTable + "/$count", {
                 filters: aFilters,
@@ -274,7 +353,6 @@ sap.ui.define([
 
                     // Start loading first batch
                     loadBatch(0);
-                    console.log(aAllData[0]); // should be an array
                 },
                 error: function (oError) {
                     console.error("Error loading count:", oError);
