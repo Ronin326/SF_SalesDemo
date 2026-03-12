@@ -40,6 +40,8 @@
         </VBox>
     </Panel>
 
+    <Panel id="ProgressIdicatorPanel" class="BodyPanel"></Panel>
+
     <Panel id="DataTablePanel" class="BodyPanel">
     </Panel>
     </Page>

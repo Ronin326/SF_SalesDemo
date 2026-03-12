@@ -30,8 +30,8 @@ sap.ui.define([
 
         _onRouteMatched: function(oEvent) {
             //Set Page Title
-            var oPanel = this.byId("DataTablePage");
-            oPanel.setTitle(this.getOwnerComponent().getModel("shared").getProperty("/SelectedTableID") + ": Display of Entries Found");
+            var oPage = this.byId("DataTablePage");
+            oPage.setTitle(this.getOwnerComponent().getModel("shared").getProperty("/SelectedTableID") + ": Display of Entries Found");
 
             //Load Search Data
             this.byId("SearchInTableInputBox").setValue(this.getOwnerComponent().getModel("shared").getProperty("/SelectedTableID"))
@@ -99,8 +99,16 @@ sap.ui.define([
             });
 
             // Panel busy + runtime start
-            oPanel.setBusy(true);
-            oPanel.setBusyIndicatorDelay(0);
+
+            var oProgress = new sap.m.ProgressIndicator({
+                width: "100%",
+                percentValue: 0,
+                displayValue: "0 %",
+                showValue: true
+            });
+
+            oPanel.addContent(oProgress);
+
             var iStartTime = performance.now();
             var oRunTimeInput = this.byId("RunTimeInputBox");
             var oRunTimeText = this.byId("RunTimeExtraText");
@@ -300,9 +308,12 @@ sap.ui.define([
                     // Step 2: Load data in batches
                     var aAllData = [];
 
+                    //Set batch size
+                    var iBatchSize = Math.ceil(Math.min(iTotalCount,iMaxHits) * 10 / 100)
+
                     function loadBatch(iSkip) {
                         var bParams = {
-                            "$top": Math.min(1000, iMaxHits),
+                            "$top": iBatchSize,
                             "$skip": iSkip
                         };
 
@@ -315,15 +326,21 @@ sap.ui.define([
                             success: function (oData) {
                                 aAllData = aAllData.concat(oData.results);
 
-                                if (oData.results.length === 1000) {
-                                    loadBatch(iSkip + 1000);
+                                //Update Progress indicator
+                                var ipersentage = Math.floor(aAllData.length / Math.min(iTotalCount,iMaxHits) * 100)
+                                oProgress.setPercentValue(ipersentage)
+                                oProgress.setDisplayValue(ipersentage + " %")
+
+                                var iLimit = Math.min(iTotalCount, iMaxHits);
+
+                                if (aAllData.length < iLimit && oData.results.length === iBatchSize) {
+                                    loadBatch(iSkip + iBatchSize);
                                 } else {
-                                    finalizeTable(aAllData);
+                                    finalizeTable(aAllData.slice(0, iLimit));
                                 }
                             },
                             error: function (oError) {
                                 console.error("Error loading table batch:", oError);
-                                oPanel.setBusy(false);
                             }
                         });
                     }
@@ -340,8 +357,13 @@ sap.ui.define([
 
                         // Adjust visible rows dynamically
                         oTable.setVisibleRowCount(aData.length);
+
+                        
+                        oProgress.setPercentValue(100)
+                        oProgress.setDisplayValue("100 %")
+                        oPanel.removeAllContent();
+
                         oPanel.addContent(oTable);
-                        oPanel.setBusy(false);
 
                         // Show runtime
                         var iEndTime = performance.now();
@@ -356,7 +378,6 @@ sap.ui.define([
                 },
                 error: function (oError) {
                     console.error("Error loading count:", oError);
-                    oPanel.setBusy(false);
                 }
             });
         },
